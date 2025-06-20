@@ -12,8 +12,9 @@
 
 // stop IDs can be found in the JSON reply for e.g. Pionierstraße using this request in a regular browser:
 // https://www.kvv.de/tunnelEfaDirect.php?action=XSLT_STOPFINDER_REQUEST&name_sf=pionierstraße&outputFormat=JSON&type_sf=any
-#define STOP_ID  "7000238"  // Pionierstraße
-// #define STOP_ID  "7001004"    // Europaplatz/Postgalerie
+//#define STOP_ID  "7000238"  // Pionierstraße
+//#define STOP_ID  "7001004"    // Europaplatz/Postgalerie
+#define STOP_ID  "7000065"    // ZKM
 
 // number of departures to be requested
 #define LIMIT "6"   // the epaper display can display six text lines
@@ -42,7 +43,7 @@ ESP8266WiFiMulti WiFiMulti;
 
 #define TOP 15
 #define SKIP 18
-#define COL0_WIDTH 28
+#define COL0_WIDTH 36
 #include "FreeSansBold9pt8b.h"
 
 // ****** UTF8-Decoder: convert UTF8-string to extended ASCII *******
@@ -142,9 +143,6 @@ void parse_reply(Stream &payload) {
   struct tm timeinfo;
   parse_time(&timeinfo, obj["dateTime"]);
 
-  // convert to time_t for time span calculation
-  time_t now = mktime(&timeinfo);
-
   // one would usually use strftime, but that adds leading 0's to the
   // month and hour which we don't want to save space
   // max length of timestring is "DD.MM.YY HH:mm" -> 15 Bytes incl \0-term 
@@ -174,10 +172,26 @@ void parse_reply(Stream &payload) {
   display.setTextColor(EPD_WHITE);
   display.setCursor(295-w-2, TOP);
   display.print(timeStamp);
-  
-  // TODO: Delayed trains are listed first even if their real departure time
+
+  // Delayed trains are listed first even if their real departure time
   // is later then other trains. We'd like to display them in their real
-  // departure order instead.
+  // departure order instead. For simplicity, we just do a very rudimentary sort.
+
+  // Create a list for the indices ordered by countdown value. This is done by
+  // list as JsonObjs cannot trivially be copied.
+  int order[obj["departureList"].size()];
+  for (size_t i = 0; i < obj["departureList"].size(); i++) order[i] = i;
+
+  for (size_t i = 0; i < obj["departureList"].size() - 1; i++) {
+    for (size_t j = i + 1; j < obj["departureList"].size(); j++) {
+      int ci = obj["departureList"][order[i]]["countdown"];
+      int cj = obj["departureList"][order[j]]["countdown"];
+      if (ci > cj) { // Swap elements
+        int temp = order[i]; order[i] = order[j]; order[j] = temp;
+      }
+    }
+  }
+
   for(int i=0;i<obj["departureList"].size();i++) {  
     JsonObject nobj = obj["departureList"][i];     // i'th object in departure list 
 
@@ -194,7 +208,7 @@ void parse_reply(Stream &payload) {
       c[1] = '\0';               // terminate string after last non-space
     }   
 
-    // further (previus) direction/destination handlng requires a String object
+    // further direction/destination handlng requires a String object
     String destination(direction);
     
     const char *route = nobj["servingLine"]["symbol"];
@@ -207,9 +221,10 @@ void parse_reply(Stream &payload) {
     if(nobj.containsKey("realDateTime")) parse_time(&deptime, nobj["realDateTime"]);
     else                                 parse_time(&deptime, nobj["dateTime"]);
 
-    // create nice time string
+    // Create nice time string. Countdown is actually sometimes < 0 if the vehicle
+    // was expected to arrive already
     char time[8];
-    if(countdown == 0)       strcpy(time, "sofort");
+    if(countdown <= 0)       strcpy(time, "sofort");
     else if(countdown < 10)  sprintf(time, "%d min", countdown);
     else                     sprintf(time, "%d:%02d", deptime.tm_hour, deptime.tm_min);      
 
