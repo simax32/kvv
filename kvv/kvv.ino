@@ -1,4 +1,4 @@
-#include "wifi.h"
+#include "secrets.h"  // Enthält die WLAN-Anmeldedaten
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <Adafruit_ThinkInk.h>
@@ -196,7 +196,7 @@ void setup() {
   Serial.println();
   Serial.println();
   WiFi.mode(WIFI_STA);
-  WiFiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);
+  WiFiMulti.addAP(SECRET_WIFI_SSID, SECRET_WIFI_PASSWORD);  // Verwendung der Secrets
   while((WiFiMulti.run() != WL_CONNECTED)) {
     Serial.print('.');
     digitalWrite(LED_BUILTIN, HIGH);
