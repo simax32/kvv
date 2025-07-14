@@ -1,0 +1,16 @@
+# Ignore compiled binaries
+*.o
+*.a
+*.bin
+*.hex
+
+# Ignore local configuration files
+*.local
+*.swp
+*.swo
+
+# Ignore secrets file
+secrets.h
+
+# Ignore build directories
+build/
