@@ -1,8 +1,8 @@
-*Update 11.05.2022*: The KVV time table service this project made use of is gone. This code has been updated to support the newer API.
 
 # KVV
 
-We recently (Nov 2020) got a new tram extension in Karlsruhe, Germany. To celebrate the fact that there's now a station pretty close to our home I decided to build a virtual timetable. And since I had some spare ESP8266 powered Wemos D1 and a 2.9" tricolor e-paper display I decided to use these.
+On the CCC meetup GPN @harbaum showed their implementation of this code.
+The following is all their input currently
 
 ![Final setup](doc/kvv_final.jpg)
 
